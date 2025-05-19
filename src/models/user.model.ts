@@ -2,11 +2,23 @@ import mongoose from "mongoose";
 import { compareValue, hashValue } from "../utils/bcrypt";
 
 export interface UserDocument extends mongoose.Document {
+  firstName: string;
+  lastName: string;
   email: string;
+  provider: 'manual' | 'google';
+  profileImage?: string | null;
+  gender: 'male' | 'female' | 'other';
+  nationality?: string | null;
+  language?: string | null;
+  languageToLearn?: string | null;
+  emailVerified: boolean;
+  type: 'user' | 'tutor' | 'admin';
+  isAdmin: boolean;
+  accountStatus: 'active' | 'inactive' | 'suspended';
   password: string;
   verified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   comparePassword(val: string): Promise<boolean>;
   omitPassword(): Pick<
     UserDocument,
@@ -14,10 +26,33 @@ export interface UserDocument extends mongoose.Document {
   >;
 }
 
+
+
 const userSchema = new mongoose.Schema<UserDocument>(
   {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    profileImage: { type: String, default: null },
+    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' },
+    nationality: { type: String, default: null },
+    language: { type: String, default: null },
+    languageToLearn: { type: String, default: null },
+    type: {
+      type: String,
+      enum: ['user', 'tutor', 'admin'],
+      default: 'user'
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    accountStatus: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active'
+    },
+    password: { type: String },
     verified: { type: Boolean, required: true, default: false },
   },
   {

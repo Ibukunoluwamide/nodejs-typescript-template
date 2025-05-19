@@ -9,9 +9,18 @@ export const loginSchema = z.object({
   password: passwordSchema,
   userAgent: z.string().optional(),
 });
+export const continueWithGoogleSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: emailSchema,
+  password: z.string().optional(),
+  userAgent: z.string().optional(),
+});
 
 export const registerSchema = loginSchema
   .extend({
+    firstName: z.string(),
+    lastName: z.string(),
     confirmPassword: passwordSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {

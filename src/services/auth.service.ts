@@ -33,6 +33,8 @@ import {
 import { sendMail } from "../utils/sendMail";
 
 type CreateAccountParams = {
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   userAgent?: string;
@@ -45,6 +47,8 @@ export const createAccount = async (data: CreateAccountParams) => {
   appAssert(!existingUser, CONFLICT, "Email already in use");
 
   const user = await UserModel.create({
+    firstName: data.firstName,
+    lastName: data.lastName,
     email: data.email,
     password: data.password,
   });
@@ -52,7 +56,7 @@ export const createAccount = async (data: CreateAccountParams) => {
   const verificationCode = await VerificationCodeModel.create({
     userId,
     type: VerificationCodeType.EmailVerification,
-    expiresAt: oneYearFromNow(),
+    expiresAt: oneHourFromNow(),
   });
 
   const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`;
@@ -121,6 +125,47 @@ export const loginUser = async ({
   });
   return {
     user: user.omitPassword(),
+    accessToken,
+    refreshToken,
+  };
+};
+export const continueWithGoogleUser = async ({
+  firstName,
+  lastName,
+  email,
+  userAgent,
+}: {firstName?:string, lastName?:string, email:string, userAgent?:string}) => {
+   let user;
+  const existingUser = await UserModel.exists({
+    email,
+  });
+  if (existingUser) {
+     user = existingUser
+  }else{
+    user = await UserModel.create({
+    firstName: firstName || "User",
+    lastName: lastName || "User",
+    email,
+   });
+  }
+
+  const userId = user._id;
+  const session = await SessionModel.create({
+    userId,
+    userAgent,
+  });
+
+  const sessionInfo: RefreshTokenPayload = {
+    sessionId: session._id,
+  };
+
+  const refreshToken = signToken(sessionInfo, refreshTokenSignOptions);
+  const accessToken = signToken({
+    ...sessionInfo,
+    userId,
+  });
+  return {
+    user,
     accessToken,
     refreshToken,
   };

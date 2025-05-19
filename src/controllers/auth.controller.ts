@@ -1,6 +1,7 @@
 import { CREATED, OK, UNAUTHORIZED } from "../constants/http";
 import SessionModel from "../models/session.model";
 import {
+  continueWithGoogleUser,
   createAccount,
   loginUser,
   refreshUserAccessToken,
@@ -18,12 +19,13 @@ import {
 import { verifyToken } from "../utils/jwt";
 import catchErrors from "../utils/catchErrors";
 import {
+  continueWithGoogleSchema,
   emailSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
   verificationCodeSchema,
-} from "./auth.schemas";
+} from "../schemas/auth.schemas";
 
 export const registerHandler = catchErrors(async (req, res) => {
   const request = registerSchema.parse({
@@ -33,7 +35,7 @@ export const registerHandler = catchErrors(async (req, res) => {
   const { user, accessToken, refreshToken } = await createAccount(request);
   return setAuthCookies({ res, accessToken, refreshToken })
     .status(CREATED)
-    .json(user);
+    .json({message: "User registered successfully", user});
 });
 
 export const loginHandler = catchErrors(async (req, res) => {
@@ -47,6 +49,18 @@ export const loginHandler = catchErrors(async (req, res) => {
   return setAuthCookies({ res, accessToken, refreshToken })
     .status(OK)
     .json({ message: "Login successful" });
+});
+export const continueWithGoogleHandler = catchErrors(async (req, res) => {
+  const request = continueWithGoogleSchema.parse({
+    ...req.body,
+    userAgent: req.headers["user-agent"],
+  });
+  const { accessToken, refreshToken } = await continueWithGoogleUser(request);
+
+  // set cookies
+  return setAuthCookies({ res, accessToken, refreshToken })
+    .status(OK)
+    .json({ message: "Successfully signed in." });
 });
 
 export const logoutHandler = catchErrors(async (req, res) => {
